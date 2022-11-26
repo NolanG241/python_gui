@@ -106,27 +106,37 @@ class Desktop(flx.PinboardLayout):
 
 class Window(flx.Widget):
 
+    CSS = """
+        .flx-Window {
+            background-color: #ffffff;
+        }
+    """
+
+    hidden = flx.BoolProp(True)
+
     DEFAULT_MIN_SIZE = 300, 0
 
-    def init(self):
+    def init(self, content, title=''):
         super().init()
 
         with flx.VBox(flex=0):
             self.captionbar = CaptionBar(flex=0, style='border: 1px solid #ff0000;')
-            with flx.HBox(flex=0) as self.contentpane:
-                flx.Label(text='Content')
+            self.contentpane = flx.HBox(flex=0)
             self.statusbar = ToolBar(num_bars=1, flex=0)
         
-        caption_icon = flx.Button(text='I')
-        self.caption_title = flx.Label(text='Title', flex=1)
+        self.caption_icon = flx.Button(text='I')
+        self.caption_title = flx.Label(text=title, flex=1)
         self.close_btn = flx.Button(text='X')
 
-        self.captionbar.add_icon(caption_icon)
+        self.captionbar.add_icon(self.caption_icon)
         self.captionbar.add_title(self.caption_title)
         self.captionbar.add_button(self.close_btn)
 
         status = flx.Label(text='Status')
         self.statusbar.add_item(status)
+
+        self.content = content
+        self.content.set_parent(self.contentpane)
     
     @flx.reaction('close_btn.pointer_click')
     def on_close(self, *events):
@@ -138,10 +148,7 @@ class Window(flx.Widget):
         pos_x = pos[0] - self.size[0] // 2
         pos_y = pos[1] - self.captionbar.size[1] * 2
         self.apply_style(f'left:{pos_x}px;top:{pos_y}px;')
-
-
-    hidden = flx.BoolProp(False)
-
+    
     @flx.reaction('hidden')
     def __hidden_changed(self, *events):
         self.apply_style(f'display:{"none" if self.hidden else "unset"};')
@@ -153,11 +160,10 @@ class Window(flx.Widget):
     @flx.action
     def hide(self):
         self._mutate_hidden(True)
-
     
-
-    
-
+    def dispose(self):
+        self.content = None
+        super().dispose()
 
 class UI(flx.Widget):
 
@@ -169,21 +175,33 @@ class UI(flx.Widget):
             self.desktop = Desktop(flex=1)
             self.taskbar = ToolBar(flex=0)
         
-        self.app_btn = flx.Button(text='1')
+        self.app1_btn = flx.Button(text='App 1')
+        self.app2_btn = flx.Button(text='App 2')
 
-        self.toolbar.add_item(self.app_btn)
+        self.toolbar.add_item(self.app1_btn)
+        self.toolbar.add_item(self.app2_btn)
+        
         self.toolbar.add_item(flx.Label(text='Title'), 1)
-        self.toolbar.add_item(flx.Button(text='2'), 2)
+        self.toolbar.add_item(flx.Button(text='Logout'), 2)
 
         self.taskbar.add_item(flx.Label(text='TaskBar'))
 
         #self.btn2 = flx.Button(text='2')
         #self.btn3 = flx.Button(text='3')
     
-    @flx.reaction('app_btn.pointer_click')
-    def show_app(self, *events):
+    @flx.reaction('app1_btn.pointer_click')
+    def show_app1(self, *events):
         with self:
-            wdn = Window(flex=0, style='border: 1px solid #00ff00;')
+            content = flx.Label(text='Content 1')
+            wdn = Window(content, 'App 1', flex=0, style='border: 1px solid #00ff00;')
+        self.desktop.add_item(wdn)
+        wdn.show()
+    
+    @flx.reaction('app2_btn.pointer_click')
+    def show_app2(self, *events):
+        with self:
+            content = flx.Label(text='Content 2')
+            wdn = Window(content, 'App 2', flex=0, style='border: 1px solid #0000ff;')
         self.desktop.add_item(wdn)
         wdn.show()
 
